@@ -29,3 +29,6 @@ spring:
             user-info-authentication-method: header
             user-name-attribute: response
 
+domain :
+  name : "http://localhost:8080"
+
