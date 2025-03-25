@@ -16,14 +16,13 @@ import com.InfoSec.dynamic_password.domain.share.repository.StoreRepository;
 import com.InfoSec.dynamic_password.global.config.configuration_properties.DomainConfig;
 import com.InfoSec.dynamic_password.global.security.auth.jwt.dto.SecurityUserDto;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,7 +37,7 @@ public class StoreService {
     private InviteTokenRepository inviteTokenRepository;
 
     @Transactional
-    public void createStore(
+    public Long createStore(
             CreateStoreDto createStoreDto,
             SecurityUserDto securityUserDto
     ) {
@@ -54,15 +53,18 @@ public class StoreService {
                 .name(createStoreDto.getStoreName())
                 .description(createStoreDto.getDescription())
                 .build();
+
         storeRepository.save(store);
 
         StoreJoin storeJoin = StoreJoin.builder()
                 .store(store)
                 .member(member)
-                .joinStatus(JoinStatus.PENDING)
+                .joinStatus(JoinStatus.MASTER)
                 .build();
 
         storeJoinRepository.save(storeJoin);
+
+        return store.getStoreId();
     }
 
     public String generateInviteLink(
@@ -74,7 +76,7 @@ public class StoreService {
 
         if (store.getMember() != null
                 && store.getMember().getEmail() != null
-                && store.getMember().getEmail().equals(securityUserDto.getEmail())) {
+                && !store.getMember().getEmail().equals(securityUserDto.getEmail())) {
             throw new IllegalArgumentException("You do not have permission to modify the store.");
         }
 
@@ -86,7 +88,7 @@ public class StoreService {
 
         inviteTokenRepository.save(inviteToken);
 
-        return String.format("%s/%d/members/%s", domainConfig.getName(), storeId, token);
+        return String.format("%s/stores/%d/members/%s", domainConfig.getName(), storeId, token);
     }
 
     private String generateInviteToken() {
@@ -106,11 +108,24 @@ public class StoreService {
          savedInviteToken.getStoreId())
                .orElseThrow(() -> new IllegalArgumentException("Store not found."));
 
+       if(storeJoinRepository.existsByMember_MemberId(savedMember.getMemberId())) {
+           throw new IllegalArgumentException("Member already exists.");
+       }
+
        if (!savedInviteToken.getStoreId().equals(storeId)) {
            throw new IllegalArgumentException("Invite token does not match store id.");
        }
 
        inviteTokenRepository.delete(savedInviteToken);
+
+       Date now = new Date();
+
+       long diffInMillis = now.getTime() - savedInviteToken.getCreatedAt().getTime();
+       long diffInDays = TimeUnit.MILLISECONDS.toDays(diffInMillis);
+
+       if (diffInDays > 7) {
+            throw new IllegalArgumentException("Invite token expired.");
+       }
 
        StoreJoin storeJoin = StoreJoin.builder()
                .store(savedStore)
@@ -119,6 +134,7 @@ public class StoreService {
                .build();
 
        storeJoinRepository.save(storeJoin);
+       log.info("MemberId = {} Join Request In {} Success", savedMember.getMemberId(), savedStore.getStoreId());
     }
 
     @Transactional(readOnly = true)

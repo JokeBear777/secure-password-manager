@@ -26,8 +26,8 @@ public class StoreController {
             @Valid @RequestBody CreateStoreDto createStoreDto,
             @AuthenticationPrincipal SecurityUserDto securityUserDto
     ) {
-        storeService.createStore(createStoreDto, securityUserDto);
-        return ResponseEntity.ok().build();
+        Long storeId = storeService.createStore(createStoreDto, securityUserDto);
+        return ResponseEntity.ok(StatusResponseDto.success(storeId));
     }
 
     @PostMapping("/{store_id}/invite")
@@ -81,6 +81,8 @@ public class StoreController {
         storeService.disApproveRequestJoinMembers(securityUserDto,storeId, disapproveMemberRequestDtos);
         return ResponseEntity.ok(StatusResponseDto.success());
     }
+
+
 
 
 }
