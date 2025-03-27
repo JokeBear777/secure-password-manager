@@ -24,9 +24,8 @@ public class Store {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long storeId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "master_id", nullable = false, updatable = false)
-    private Member member;
+    @Column(name = "master_member_id", nullable = false)
+    private Long masterMemberId;
 
     @Column(name = "name", nullable = false)
     private String name;

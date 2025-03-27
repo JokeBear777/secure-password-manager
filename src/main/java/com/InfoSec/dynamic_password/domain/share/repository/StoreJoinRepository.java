@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StoreJoinRepository extends JpaRepository<StoreJoin, Long> {
     @Query("SELECT sj FROM StoreJoin sj WHERE sj.store.storeId = :storeId")
@@ -16,4 +17,6 @@ public interface StoreJoinRepository extends JpaRepository<StoreJoin, Long> {
     boolean existsByStoreAndMember(Store store, Member member);
 
     boolean existsByMember_MemberId(Long memberId);
+
+    Optional<StoreJoin> findByStoreAndMember(Store store, Member member);
 }

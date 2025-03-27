@@ -62,7 +62,7 @@ public class StoreController {
         return ResponseEntity.ok(StatusResponseDto.success(requestJoinMembersDtoList));
     }
 
-    @PatchMapping("/stores/{store_id}/members/approve")
+    @PatchMapping("/{store_id}/members/approve")
     public ResponseEntity<?> approveJoinMembers(
             @AuthenticationPrincipal SecurityUserDto securityUserDto,
             @PathVariable("store_id") Long storeId,
@@ -72,7 +72,7 @@ public class StoreController {
         return ResponseEntity.ok(StatusResponseDto.success());
     }
 
-    @PatchMapping("/stores/{store_id}/members/disapprove")
+    @PatchMapping("/{store_id}/members/disapprove")
     public ResponseEntity<?> disapproveJoinMembers(
             @AuthenticationPrincipal SecurityUserDto securityUserDto,
             @PathVariable("store_id") Long storeId,
@@ -81,7 +81,6 @@ public class StoreController {
         storeService.disApproveRequestJoinMembers(securityUserDto,storeId, disapproveMemberRequestDtos);
         return ResponseEntity.ok(StatusResponseDto.success());
     }
-
 
 
 

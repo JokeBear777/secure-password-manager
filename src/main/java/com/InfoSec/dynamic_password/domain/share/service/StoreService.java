@@ -1,5 +1,7 @@
 package com.InfoSec.dynamic_password.domain.share.service;
 
+import com.InfoSec.dynamic_password.domain.encrypt.entity.StoreRsaPublicKeyEntity;
+import com.InfoSec.dynamic_password.domain.encrypt.repository.StoreRsaPublicKeyRepository;
 import com.InfoSec.dynamic_password.domain.member.entity.Member;
 import com.InfoSec.dynamic_password.domain.member.repository.MemberRepository;
 import com.InfoSec.dynamic_password.domain.share.Status.JoinStatus;
@@ -35,6 +37,7 @@ public class StoreService {
     private StoreRepository storeRepository;
     private MemberRepository memberRepository;
     private InviteTokenRepository inviteTokenRepository;
+    private StoreRsaPublicKeyRepository storeRsaPublicKeyRepository;
 
     @Transactional
     public Long createStore(
@@ -49,7 +52,7 @@ public class StoreService {
                 .orElseThrow(() -> new IllegalArgumentException("Member not found."));
 
         Store store = Store.builder()
-                .member(member)
+                .masterMemberId(securityUserDto.getUserId())
                 .name(createStoreDto.getStoreName())
                 .description(createStoreDto.getDescription())
                 .build();
@@ -71,14 +74,7 @@ public class StoreService {
             SecurityUserDto securityUserDto,
             Long storeId
     ) {
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("Store not found."));
-
-        if (store.getMember() != null
-                && store.getMember().getEmail() != null
-                && !store.getMember().getEmail().equals(securityUserDto.getEmail())) {
-            throw new IllegalArgumentException("You do not have permission to modify the store.");
-        }
+        isStoreMaster(securityUserDto, storeId);
 
         String token = generateInviteToken();
         InviteToken inviteToken = InviteToken.builder()
@@ -145,8 +141,8 @@ public class StoreService {
         Store savedStore = storeRepository.findById(storeId)
                 .orElseThrow(() -> new IllegalArgumentException("Store not found."));
 
-        if (!savedMember.getMemberId().equals(savedStore.getMember().getMemberId())) {
-            throw new IllegalArgumentException("Member does not match store id.");
+        if (!savedMember.getMemberId().equals(savedStore.getMasterMemberId())) {
+            throw new IllegalArgumentException("Member is not store master.");
         }
 
         List<StoreJoin> storeJoins = storeJoinRepository.findByStoreId(storeId);
@@ -167,6 +163,8 @@ public class StoreService {
             Long storeId,
             ApproveMemberRequestDto[] approveMemberRequestDtos
     ) {
+        isStoreMaster(securityUserDto, storeId);
+
         List<Long> storeJoinIds = Arrays.stream(approveMemberRequestDtos)
                 .map(ApproveMemberRequestDto::getStoreJoinId)
                 .toList();
@@ -187,7 +185,7 @@ public class StoreService {
         Store savedStore = storeRepository.findById(storeId)
                 .orElseThrow(() -> new IllegalArgumentException("Store not found."));
 
-        if (!Objects.equals(securityUserDto.getUserId(), savedStore.getMember().getMemberId())) {
+        if (!Objects.equals(securityUserDto.getUserId(), savedStore.getMasterMemberId())) {
             throw new IllegalArgumentException("Member does not have permission to approve store join requests.");
         }
 
@@ -202,6 +200,11 @@ public class StoreService {
             Long storeId,
             DisapproveMemberRequestDto[] disapproveMemberRequestDtos
     ) {
+        isStoreMaster(securityUserDto, storeId);
+
+        Store savedStore = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("Store not found."));
+
         List<Long> storeJoinIds = Arrays.stream(disapproveMemberRequestDtos)
                 .map(DisapproveMemberRequestDto::getStoreJoinId)
                 .toList();
@@ -219,15 +222,23 @@ public class StoreService {
             throw new IllegalArgumentException("The disapproval request contains a non-existent request.");
         }
 
-        Store savedStore = storeRepository.findById(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("Store not found."));
-
-        if (!Objects.equals(securityUserDto.getUserId(), savedStore.getMember().getMemberId())) {
+        if (!Objects.equals(securityUserDto.getUserId(), savedStore.getMasterMemberId())) {
             throw new IllegalArgumentException("Member does not have permission to approve store join requests.");
         }
 
         storeJoinRepository.deleteAll(storeJoins);
     }
 
+    private void isStoreMaster(
+            SecurityUserDto securityUserDto,
+            Long storeId
+    ) {
+        Store savedStore = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("Store not found."));
+
+        if (!savedStore.getMasterMemberId().equals(securityUserDto.getUserId())) {
+            throw new IllegalArgumentException("This request is only permitted for the store master");
+        }
+    }
 
 }
