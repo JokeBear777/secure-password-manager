@@ -51,10 +51,10 @@ public class StoreKeyExchangeService {
             throw new IllegalArgumentException("User's public key cannot be empty.");
         }
 
-        if (exchangeKeyEntityRepository.existsByMember_MemberId(savedMember.getMemberId())) {
+        if (exchangeKeyEntityRepository.existsByMember_MemberIdAndStore_StoreId(
+                savedMember.getMemberId(), savedStore.getStoreId())) {
             throw new IllegalArgumentException("Request already exists.");
-        }
-        ;
+        };
 
         ExchangeKeyEntity exchangeKeyEntity = ExchangeKeyEntity.builder()
                 .store(savedStore)
@@ -89,6 +89,33 @@ public class StoreKeyExchangeService {
                         .build()
                 )
                 .collect(Collectors.toSet());
+    }
+
+    @Transactional
+    public String getStoreKeyExchangeStatus(SecurityUserDto securityUserDto, Long storeId) {
+        Member savedMember = memberRepository.findByMemberId(securityUserDto.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("Member not found."));
+
+        Store savedStore = storeRepository.findById(storeId)
+                .orElseThrow(() -> new IllegalArgumentException("Store not found."));
+
+        StoreJoin storeJoin = storeJoinRepository.findByStoreAndMember(savedStore,savedMember)
+                .orElseThrow(() -> new IllegalArgumentException("You are not a member of this store."));
+
+        if(!storeJoin.getJoinStatus().equals(JoinStatus.APPROVED)) {
+            throw new IllegalArgumentException("This request is only allowed for approved members.");
+        }
+
+        ExchangeKeyEntity exchangeKeyEntity = exchangeKeyEntityRepository.findByMember_MemberIdAndStore_StoreId(
+                securityUserDto.getUserId(),
+                storeId
+        ).orElseThrow(() -> new IllegalArgumentException("No key request has been made."));
+
+        if(exchangeKeyEntity.getMasterEncryptedSecretKey() == null) {
+            throw new IllegalArgumentException("Store master has not responded yet");
+        }
+
+        return exchangeKeyEntity.getMasterEncryptedSecretKey();
     }
 
 

@@ -42,4 +42,13 @@ public class StoreKeyController {
                 = storeKeyExchangeService.getStoreKeyExchangeRequests(securityUserDto, storeId);
         return ResponseEntity.ok(StatusResponseDto.success(getStoreKeyExchangeRequestDtos));
     }
+
+    @GetMapping("/store-encrypted-secret")
+    public ResponseEntity<?> getStoreKeyExchangeStatus(
+            @AuthenticationPrincipal SecurityUserDto securityUserDto,
+            @PathVariable("store_id") Long storeId
+    ) {
+        String encryptedStoreKey = storeKeyExchangeService.getStoreKeyExchangeStatus(securityUserDto,storeId);
+        return ResponseEntity.ok(StatusResponseDto.success(encryptedStoreKey));
+    }
 }
