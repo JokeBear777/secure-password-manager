@@ -50,9 +50,11 @@ public class StoreRsaService {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new IllegalArgumentException("Store not found."));
 
-        if (!member.getMemberId().equals(store.getMember().getMemberId())) {
+        /*if (!member.getMemberId().equals(store.getMember().getMemberId())) {
             throw new IllegalArgumentException("Member does not match store id.");
         }
+
+         */
 
         if (storeRsaPublicKeyRepository.existsByStore_StoreId(storeId)) {
             throw new IllegalStateException("Store with ID " + storeId

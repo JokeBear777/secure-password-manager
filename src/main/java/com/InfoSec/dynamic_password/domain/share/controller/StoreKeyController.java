@@ -23,7 +23,7 @@ public class StoreKeyController {
 
     private final StoreKeyExchangeService storeKeyExchangeService;
 
-    @PostMapping("/exchange}")
+    @PostMapping("/exchange")
     public ResponseEntity<?> exchangeKeyRequest(
             @AuthenticationPrincipal SecurityUserDto securityUserDto,
             @PathVariable("store_id") Long storeId,

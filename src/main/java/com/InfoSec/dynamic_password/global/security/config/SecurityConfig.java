@@ -9,12 +9,24 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
+import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AccessTokenResponse;
+import org.springframework.security.oauth2.core.http.converter.OAuth2AccessTokenResponseHttpMessageConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Configuration
@@ -38,20 +50,24 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/favicon.ico",
+                                "/",
+                                "/index.html",
+                                "/login.html",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()            // 정적 리소스 & Swagger UI
-                        .requestMatchers("/oauth2/**", "/auth/**").permitAll()   // OAuth2 인증 엔드포인트
-                        .requestMatchers("/", "/login/**","sign-up").permitAll()
-                        //.requestMatchers("/sign-up/**").permitAll()
+                                "/favicon.ico",
+                                "/.well-known/**"
+                        ).permitAll()
+                        .requestMatchers("/oauth2/**", "/auth/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/sign-up/**").permitAll()
                         .anyRequest().authenticated()
                 )
 
                 .oauth2Login(outh -> outh
+                        .tokenEndpoint(token ->
+                                token.accessTokenResponseClient(accessTokenResponseClient())
+                        )
                         //.loginPage("/oauth2-login")
                         .failureHandler(oAuth2LoginFailureHandler) // OAuth2 로그인 실패시 처리할 핸들러를 지정해준다.
                         .successHandler(oAuth2LoginSuccessHandler) // OAuth2 로그인 성공시 처리할 핸들러를 지정해준다.
@@ -64,6 +80,47 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtExceptionFilter, JwtAuthFilter.class)
                 .build();
+    }
+
+    @Bean
+    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest>
+    accessTokenResponseClient() {
+
+        DefaultAuthorizationCodeTokenResponseClient client =
+                new DefaultAuthorizationCodeTokenResponseClient();
+
+        OAuth2AccessTokenResponseHttpMessageConverter tokenConverter =
+                new OAuth2AccessTokenResponseHttpMessageConverter();
+
+        tokenConverter.setAccessTokenResponseConverter(params -> {
+
+            System.out.println("NAVER TOKEN RESPONSE = " + params);
+
+            String accessToken = (String) params.get("access_token");
+
+            if (accessToken == null) {
+                throw new IllegalArgumentException("access_token missing: " + params);
+            }
+
+            return OAuth2AccessTokenResponse.withToken(accessToken)
+                    .tokenType(OAuth2AccessToken.TokenType.BEARER)
+                    .expiresIn(Long.parseLong(params.get("expires_in").toString()))
+                    .refreshToken((String) params.get("refresh_token"))
+                    .build();
+        });
+
+        RestTemplate restTemplate = new RestTemplate(
+                Arrays.asList(
+                        new FormHttpMessageConverter(),
+                        tokenConverter
+                )
+        );
+
+        restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
+
+        client.setRestOperations(restTemplate);
+
+        return client;
     }
 
 }

@@ -3,7 +3,7 @@ package com.InfoSec.dynamic_password.global.security.auth.oauth2.service;
 import com.InfoSec.dynamic_password.domain.member.entity.Member;
 import com.InfoSec.dynamic_password.domain.member.service.MemberService;
 import com.InfoSec.dynamic_password.domain.member.type.MemberRole;
-import com.InfoSec.dynamic_password.global.security.auth.oauth2.adapter.OAuth2AttributeAdapter;
+import com.InfoSec.dynamic_password.global.security.auth.oauth2.adapter.OAuth2AdapterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
@@ -28,15 +28,8 @@ import java.util.Optional;
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private final MemberService memberService;
-    private final Map<String, OAuth2AttributeAdapter> attributeAdapterMap;
+    private final OAuth2AdapterRegistry OAuth2AdapterRegistry;
 
-    public OAuth2AttributeAdapter getAttributeAdapterMap(String registrationId) {
-        OAuth2AttributeAdapter adapter = attributeAdapterMap.get(registrationId);
-        if (adapter == null) {
-            throw new IllegalArgumentException("No adapter found for registrationId: " + registrationId);
-        }
-        return attributeAdapterMap.get(registrationId);
-    }
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -53,7 +46,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         //사용자 속성 가져오기
         Map<String, Object> attributes =
-                getAttributeAdapterMap(registrationId)
+                OAuth2AdapterRegistry.get(registrationId)
                         .convertMap(registrationId,userNameAttributeName,oAuth2User.getAttributes());
 
         Optional<Member> findMember = memberService.findByEmail(attributes.get("email").toString());
@@ -68,6 +61,9 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(findMember.get().getMemberRole().toString()));
         return new DefaultOAuth2User(authorities, attributes, "email");
     }
+
+
+
 
 
 }

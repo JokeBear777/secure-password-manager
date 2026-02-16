@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Member API", description = "회원 가입 관련 API")
 @RestController
-@RequestMapping("/sign-up")
+@RequestMapping("/api/sign-up")
 @RequiredArgsConstructor
 public class SignUprController {
 
@@ -37,7 +37,7 @@ public class SignUprController {
             @Valid @RequestBody SignUpRequestDto signUpRequestDto
     ) {
         memberService.signUp(signUpRequestDto);
-        return ResponseEntity.ok(ResponseEntity.status(HttpStatus.CREATED).build());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
 
