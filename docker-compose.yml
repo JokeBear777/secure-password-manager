@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+
+  redis:
+    image: redis:8.0
+    container_name: dp-redis
+    ports:
+      - "6380:6379"
+    restart: always
+    networks:
+      - dp-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mysql:
+    image: mysql:8.0
+    container_name: dp-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: dynamic_password
+      MYSQL_USER: dpuser
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3308:3306"
+    restart: always
+    volumes:
+      - dp_mysql_data:/var/lib/mysql
+    networks:
+      - dp-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dp_mysql_data:
+
+networks:
+  dp-net:
+
+
