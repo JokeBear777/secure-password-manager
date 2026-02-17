@@ -1,5 +1,6 @@
 package com.InfoSec.dynamic_password.global.exeption;
 
+import com.InfoSec.dynamic_password.global.exeption.custom.OAuthSignupSessionNotFoundException;
 import com.InfoSec.dynamic_password.global.exeption.custom.RedisOperationException;
 import com.InfoSec.dynamic_password.global.utils.dto.MessageStatusResponseDto;
 import org.aspectj.bridge.Message;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.webjars.NotFoundException;
+
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -24,6 +27,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RedisOperationException.class)
     public ResponseEntity<?> handlerRedisOperationException(RedisOperationException e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Redis Error" + e.getMessage());
+    }
+
+    @ExceptionHandler(OAuthSignupSessionNotFoundException.class)
+    public ResponseEntity<?> handleOAuthSessionException(
+            OAuthSignupSessionNotFoundException e) {
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", e.getMessage()));
     }
 
 }

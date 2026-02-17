@@ -5,6 +5,8 @@ import java.util.Map;
 
 public interface OAuth2AttributeAdapter {
 
+    public String provider();
+
     public Map<String, Object> convertMap(
             String provider,
             String attributeKey,

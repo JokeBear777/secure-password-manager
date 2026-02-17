@@ -1,5 +1,6 @@
 package com.InfoSec.dynamic_password.global.security.auth.oauth2.handler;
 
+import com.InfoSec.dynamic_password.domain.member.dto.OAuthSignupInfo;
 import com.InfoSec.dynamic_password.global.security.auth.jwt.dto.GeneratedToken;
 import com.InfoSec.dynamic_password.global.security.auth.jwt.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,23 +46,26 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         if(isExist) {
             GeneratedToken token = jwtUtil.generateToken(email, role);
-            log.info("jwtToken = {}", token.getAccessToken());
-            response.setHeader("Authorization", "Bearer " + token.getAccessToken());
-            getRedirectStrategy().sendRedirect(request, response, "/loginSuccess");
+
+            String redirectUrl = UriComponentsBuilder
+                    .fromUriString("/?token=" + token.getAccessToken())
+                    .build().toUriString();
+
+            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
         }
 
         if(!isExist) {
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
 
-            Map<String, String> payload = Map.of(
-                    "redirectUrl", "/sign-up",
-                    "email", email,
-                    "provider", provider,
-                    "name", name,
-                    "mobile", mobile
+            OAuthSignupInfo oAuthSignupInfo = new OAuthSignupInfo(
+                    email,
+                    provider,
+                    name,
+                    mobile
             );
-            new ObjectMapper().writeValue(response.getWriter(), payload);
+
+            request.getSession().setAttribute("oauthSignupInfo", oAuthSignupInfo);
+
+            response.sendRedirect("/sign-up.html");
         }
 
     }

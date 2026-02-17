@@ -1,5 +1,6 @@
 package com.InfoSec.dynamic_password.domain.member.controller;
 
+import com.InfoSec.dynamic_password.domain.member.dto.MeResponseDto;
 import com.InfoSec.dynamic_password.domain.member.service.MemberService;
 import com.InfoSec.dynamic_password.global.utils.dto.RedirectResponseData;
 import com.InfoSec.dynamic_password.global.utils.dto.StatusResponseDto;
@@ -11,15 +12,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @Tag(name = "Member API", description = "멤버 관련 API")
 @RestController
-@RequestMapping("/member")
+@RequestMapping("/api/member")
 @RequiredArgsConstructor
 public class MemberController {
     private final MemberService memberService;
@@ -33,7 +38,7 @@ public class MemberController {
             @ApiResponse(responseCode = "400", description = "요청 데이터가 유효하지 않음"),
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
-    @DeleteMapping("/")
+    @DeleteMapping("/me")
     public ResponseEntity<?> deActiveAccount(
             @AuthenticationPrincipal SecurityUserDto securityUserDto
     ) {
@@ -43,5 +48,20 @@ public class MemberController {
                 "/"
         );
         return ResponseEntity.ok(StatusResponseDto.success(redirectResponseData));
-    };
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> me(
+            @AuthenticationPrincipal SecurityUserDto user
+    ) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("인증되지 않은 사용자");
+        }
+
+        return ResponseEntity.ok(
+                MeResponseDto.from(user)
+        );
+    }
+
 }
