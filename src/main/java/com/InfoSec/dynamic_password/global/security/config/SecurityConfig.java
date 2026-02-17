@@ -53,6 +53,8 @@ public class SecurityConfig {
                                 "/",
                                 "/index.html",
                                 "/login.html",
+                                "/sign-up.html",
+                                "/home.html",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
@@ -60,7 +62,7 @@ public class SecurityConfig {
                                 "/.well-known/**"
                         ).permitAll()
                         .requestMatchers("/oauth2/**", "/auth/**", "/login/oauth2/**").permitAll()
-                        .requestMatchers("/sign-up/**").permitAll()
+                        .requestMatchers("/sign-up/**", "/api/sign-up", "/api/oauth-info","/api/**").permitAll()
                         .anyRequest().authenticated()
                 )
 

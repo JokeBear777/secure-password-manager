@@ -1,6 +1,5 @@
 package com.InfoSec.dynamic_password.global.security.auth.oauth2.adapter;
 
-import com.InfoSec.dynamic_password.global.annotation.OAuth2Provider;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 

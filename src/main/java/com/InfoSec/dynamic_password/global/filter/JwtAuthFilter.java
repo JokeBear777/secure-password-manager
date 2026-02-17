@@ -38,10 +38,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         log.info("Request path: {}", path);
         // 모두 허용 URL 처리
-        if (path.equals("/") || path.startsWith("/login") ||  path.startsWith("/error")
-                || path.startsWith("/oauth2-login") || path.startsWith("/sign-up")) {
+        if (path.startsWith("/login")
+                || path.startsWith("/error")
+                || path.startsWith("/oauth2-login")
+                || path.startsWith("/sign-up")
+                || path.startsWith("/js")
+                || path.startsWith("/css")
+                || path.startsWith("/favicon")) {
+
             filterChain.doFilter(request, response);
-            log.info("permitAll");
             return;
         }
 

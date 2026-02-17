@@ -1,5 +1,6 @@
 package com.InfoSec.dynamic_password.domain.member.service;
 
+import com.InfoSec.dynamic_password.domain.member.dto.OAuthSignupInfo;
 import com.InfoSec.dynamic_password.domain.member.entity.Member;
 import com.InfoSec.dynamic_password.domain.member.dto.SignUpRequestDto;
 import com.InfoSec.dynamic_password.domain.member.repository.MemberRepository;
@@ -9,14 +10,17 @@ import com.InfoSec.dynamic_password.global.security.auth.jwt.dto.SecurityUserDto
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.webjars.NotFoundException;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class MemberService {
 
     private final MemberRepository memberRepository;
@@ -40,6 +44,7 @@ public class MemberService {
         return memberOptional;
     }
 
+    /*
     public void signUp(
                        SignUpRequestDto signUpRequestDto
     ) {
@@ -72,7 +77,42 @@ public class MemberService {
 
         memberRepository.save(member);
     }
+     */
 
+    @Transactional
+    public void signUpOAuth(OAuthSignupInfo oAuthSignupInfo,
+                            SignUpRequestDto dto
+    ) {
+        if (oAuthSignupInfo.email().isEmpty()) {
+            throw new NotFoundException("Email is empty");
+        }
+
+        if (dto.getName().isEmpty()) {
+            throw new NotFoundException("Name is empty");
+        }
+
+        if(dto.getMobile().isEmpty()) {
+            throw new NotFoundException("Mobile number is empty");
+        }
+
+        if (!isValidEmail(oAuthSignupInfo.email())) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+
+        if (findByEmail(oAuthSignupInfo.email()).isPresent()) {
+            throw new RuntimeException("Email is already in use");
+        }
+        Member member = Member.builder()
+                .email(oAuthSignupInfo.email())
+                .name(dto.getName())
+                .mobile(dto.getMobile())
+                .memberRole(MemberRole.USER)
+                .build();
+
+        memberRepository.save(member);
+    }
+
+    @Transactional
     public void deActiveAccount(SecurityUserDto securityUserDto) {
         Member member = memberRepository.findByEmail(securityUserDto.getEmail())
                 .orElseThrow(() -> new NotFoundException("Member not found"));
